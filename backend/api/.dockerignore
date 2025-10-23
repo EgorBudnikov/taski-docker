@@ -1,0 +1,53 @@
+# Игнорировать системные файлы
+.git
+.gitignore
+README.md
+LICENSE
+
+# Игнорировать файлы Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+
+# Игнорировать виртуальные окружения
+venv/
+ENV/
+env/
+
+# Игнорировать файлы IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Игнорировать временные файлы
+*~
+*.tmp
+*.temp
+
+# Игнорировать логи
+*.log
+
+# Игнорировать статические файлы (если не нужны в образе)
+staticfiles/
+mediafiles/
+
+# Игнорировать файлы данных и конфиги (если не нужны)
+*.db
+*.sqlite3
+.env
+.env.local
