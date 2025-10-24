@@ -161,9 +161,9 @@ jobs:
       - build_gateway_and_push_to_docker_hub
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3"
       
-      - name: Cleanup old files on server
+      - name: Setup server directory with proper permissions
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -171,7 +171,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            sudo rm -f ~/taski-docker/docker-compose.production.yml
+            # Полностью очищаем директорию
+            sudo rm -rf ~/taski-docker
+            # Создаем заново с правильными правами
+            mkdir -p ~/taski-docker
+            # Устанавливаем владельца
+            sudo chown -R $USER:$USER ~/taski-docker
+            chmod 755 ~/taski-docker
       
       - name: Copy docker-compose.yml via ssh
         uses: appleboy/scp-action@master
