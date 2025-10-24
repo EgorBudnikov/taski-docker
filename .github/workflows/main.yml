@@ -195,6 +195,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: ".env"
           target: "~/taski-docker/"
+          strip_components: 0  # Убедитесь что путь сохраняется
           
       - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@master
