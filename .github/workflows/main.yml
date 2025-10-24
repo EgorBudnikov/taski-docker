@@ -171,7 +171,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            rm -f ~/taski-docker/docker-compose.production.yml
+            sudo rm -f ~/taski-docker/docker-compose.production.yml
       
       - name: Copy docker-compose.yml via ssh
         uses: appleboy/scp-action@master
