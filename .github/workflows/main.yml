@@ -135,6 +135,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/taski_frontend:latest
   build_gateway_and_push_to_docker_hub:
     name: Push gateway Docker image to DockerHub
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
