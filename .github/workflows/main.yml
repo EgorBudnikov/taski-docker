@@ -158,12 +158,20 @@ jobs:
     needs: 
       - build_and_push_to_docker_hub
       - build_frontend_and_push_to_docker_hub
-      - build_gateway_and_push_to_docker_hub
+      - build_nginx_and_push_to_docker_hub
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      
-      - name: Setup server directory
+      - name: Copy docker-compose.yml via ssh
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          source: "docker-compose.production.yml"
+          target: "taski"
+      - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -171,81 +179,21 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            sudo rm -rf ~/taski-docker
-            mkdir -p ~/taski-docker
-            sudo chown -R $USER:$USER ~/taski-docker
-      
-      - name: Create docker-compose.production.yml
-        uses: appleboy/ssh-action@master
+            cd taski
+            sudo docker compose pull
+            sudo docker compose down
+            sudo docker compose up -d
+            sudo docker compose exec backend python manage.py migrate
+            sudo docker compose exec backend python manage.py collectstatic --noinput
+
+  send_message:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Send message to tg
+        uses: appleboy/telegram-action@master
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            # Вставьте сюда реальное содержимое вашего docker-compose.production.yml
-            cat > ~/taski-docker/docker-compose.production.yml << 'EOF'
-            version: '3.8'
-            services:
-              db:
-                image: postgres:13.10
-                env_file: .env
-                volumes:
-                  - pg_data:/var/lib/postgresql/data
-              
-              backend:
-                image: ${{ secrets.DOCKER_USERNAME }}/taski_backend:latest
-                env_file: .env
-                depends_on:
-                  - db
-              
-              frontend:
-                image: ${{ secrets.DOCKER_USERNAME }}/taski_frontend:latest
-                depends_on:
-                  - backend
-              
-              gateway:
-                image: ${{ secrets.DOCKER_USERNAME }}/taski_gateway:latest
-                ports:
-                  - "80:80"
-                depends_on:
-                  - backend
-                  - frontend
-            
-            volumes:
-              pg_data:
-            EOF
-          
-      - name: Create .env file
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            cat > ~/taski-docker/.env << 'EOF'
-            POSTGRES_DB=taski_db
-            POSTGRES_USER=postgres
-            POSTGRES_PASSWORD=your_password
-            DB_HOST=db
-            DB_PORT=5432
-            DEBUG=False
-            SECRET_KEY=your-secret-key
-            ALLOWED_HOSTS=jvcryurtask.sytes.net,localhost,127.0.0.1
-            EOF
-          
-      - name: Deploy application
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            cd ~/taski-docker
-            sudo docker compose -f docker-compose.production.yml pull
-            sudo docker compose -f docker-compose.production.yml up -d
-            sleep 10
-            sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate --no-input
-            sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: Деплой выполнен!
+
